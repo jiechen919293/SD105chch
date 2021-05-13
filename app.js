@@ -1,53 +1,57 @@
-// close the open user todo list
+const getMovies = async (keyWord)=>{
+  const movieUrl = "http://www.omdbapi.com/?s="+keyWord+"&apikey=bad05635";
+  console.log(movieUrl)
+  const response = await fetch(movieUrl);
+  const data = await response.json();
 
-const userListEl = document.getElementById('user-list');
-
-const getData = (url) => {
-  return new Promise((resolve, reject) => {
-    const request = new XMLHttpRequest();
-
-    request.addEventListener('readystatechange', () => {
-      if (request.readyState === 4 && request.status === 200) {
-        resolve(JSON.parse(request.responseText));
-      } else if (request.readyState === 4) {
-        reject('something went wrong');
-      }
-    });
-    request.open('GET', url);
-    request.send();
-  });
-};
-
-const createUserList = (userData) => {
-  userData.forEach((user) => {
-    userListEl.insertAdjacentHTML(
-      'beforeend',
-      `<li data-user-id=${user.id}>${user.name}</li>`
-    );
-  });
-};
-
-const createTodoList = (todoData) => {
-  const todoListEl = document.createElement('UL');
-  todoData.forEach((todo) => {
-    todoListEl.insertAdjacentHTML('beforeend', `<li>${todo.title}</li>`);
-  });
-  return todoListEl;
-};
-
-getData('https://jsonplaceholder.typicode.com/users')
-  .then((data) => {
-    createUserList(data);
-  })
-  .catch((err) => {
-    userListEl.insertAdjacentHTML('beforeend', `<li>No Data</li>`);
-  });
-
-userListEl.addEventListener('click', (event) => {
-  if (event.target.nodeName === 'LI') {
-    const userId = event.target.dataset.userId;
-    getData(`https://jsonplaceholder.typicode.com/todos?userId=${userId}`)
-      .then((data) => createTodoList(data)) // returns a todoListEl
-      .then((todoList) => event.target.appendChild(todoList));
+  if (response.status != 200){
+    throw new err ("Can't get data");
   }
-});
+
+  return data;
+}
+
+const getPlot =  async (imdbID)=>{
+  const plotURL = "http://www.omdbapi.com/?i="+imdbID+"&apikey=bad05635";
+  const response = await fetch(plotURL);
+  const data = await response.json();
+
+  if (response.status != 200){
+    throw new err ("Can't get data");
+  }
+
+  return data;
+}
+
+const moviesList = document.getElementById("movies");
+const searchInput = document.getElementById("search");
+
+
+
+searchInput.addEventListener("keydown",function(e){
+  if (e.keyCode == 13){
+    let keyWord = searchInput.value;
+    getMovies(keyWord).then((data)=>{
+      moviesList.innerHTML="";
+      data.Search.forEach(element => {
+        getPlot(element.imdbID).then((data)=>{
+          moviesList.insertAdjacentHTML('beforeend',`
+        <li class="movie">
+          <img class="movie-poster" src="${data.Poster}" alt="">
+          <div class="overlay">
+           <h3 class="movie-title">${data.Title}</h3>
+           <p class="rate">${data.Ratings[0].Value}</p>
+           <p class="movie-plot">${data.Plot}</p>
+          </div>
+        </li>`)
+        }).catch((err)=>console.log(err));
+        
+        
+      });
+      searchInput.value = "";
+    }).catch((err)=>console.log(err))
+  }
+
+  
+})
+
